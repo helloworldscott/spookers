@@ -1,4 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
+import { collidables } from './CollisionManager.js';
 
 export class PlayerController {
   constructor(camera, domElement) {
@@ -16,6 +17,12 @@ export class PlayerController {
     this.flashlightOn = false;
     this.height = 1.7;
     this.bounds = 19;
+    this.playerBoxSize = new THREE.Vector3(0.7, 1.8, 0.7);
+    this.playerHalfExtents = this.playerBoxSize.clone().multiplyScalar(0.5);
+    this.proposedPos = new THREE.Vector3();
+    this.forward = new THREE.Vector3();
+    this.right = new THREE.Vector3();
+    this.playerAABB = new THREE.Box3();
 
     this.flashlight = new THREE.SpotLight(0xddeeff, 0, 15, Math.PI / 6, 0.65, 1.2);
     this.flashlightTarget = new THREE.Object3D();
@@ -81,16 +88,50 @@ export class PlayerController {
       this.flashlightBattery = Math.min(100, this.flashlightBattery + 1.2 * dt);
     }
 
-    const forward = (this.move.f - this.move.b);
-    const right = (this.move.r - this.move.l);
-    this.direction.set(right, 0, forward).normalize();
+    this.camera.getWorldDirection(this.forward);
+    this.forward.y = 0;
+    if (this.forward.lengthSq() > 0) this.forward.normalize();
 
-    const sin = Math.sin(this.yaw);
-    const cos = Math.cos(this.yaw);
-    const dx = (this.direction.x * cos - this.direction.z * sin) * speed * dt;
-    const dz = (this.direction.z * cos + this.direction.x * sin) * speed * dt;
-    this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x + dx, -this.bounds, this.bounds);
-    this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z + dz, -this.bounds, this.bounds);
+    this.right.crossVectors(this.camera.up, this.forward).normalize();
+
+    this.direction.set(0, 0, 0);
+    if (this.move.f) this.direction.add(this.forward);
+    if (this.move.b) this.direction.sub(this.forward);
+    if (this.move.r) this.direction.add(this.right);
+    if (this.move.l) this.direction.sub(this.right);
+    if (this.direction.lengthSq() > 0) this.direction.normalize();
+
+    this.proposedPos.copy(this.camera.position);
+    this.proposedPos.addScaledVector(this.direction, speed * dt);
+    this.proposedPos.x = THREE.MathUtils.clamp(this.proposedPos.x, -this.bounds, this.bounds);
+    this.proposedPos.z = THREE.MathUtils.clamp(this.proposedPos.z, -this.bounds, this.bounds);
+    this.proposedPos.y = this.height;
+
+    this.playerAABB.set(
+      new THREE.Vector3(
+        this.proposedPos.x - this.playerHalfExtents.x,
+        this.proposedPos.y - this.playerHalfExtents.y,
+        this.proposedPos.z - this.playerHalfExtents.z
+      ),
+      new THREE.Vector3(
+        this.proposedPos.x + this.playerHalfExtents.x,
+        this.proposedPos.y + this.playerHalfExtents.y,
+        this.proposedPos.z + this.playerHalfExtents.z
+      )
+    );
+
+    let blocked = false;
+    collidables.forEach((mesh) => {
+      if (blocked || !mesh?.userData?.collider) return;
+      if (this.playerAABB.intersectsBox(mesh.userData.collider)) {
+        blocked = true;
+      }
+    });
+
+    if (!blocked) {
+      this.camera.position.copy(this.proposedPos);
+    }
+
     this.camera.position.y = this.height;
   }
 }
