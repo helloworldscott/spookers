@@ -32,6 +32,13 @@ export class GameState {
     if (this.elapsed >= this.nightDurationSec) this.win = true;
   }
 
+  getBeamCause() {
+    if (this.breakdown) return 'BROKEN';
+    if (this.generatorFuel <= 0) return 'NO FUEL';
+    if (this.generatorCharge <= 4) return 'NO CHARGE';
+    return 'OK';
+  }
+
   getTimeLabel() {
     const progress = Math.min(1, this.elapsed / this.nightDurationSec);
     const totalMin = 360 * progress;
@@ -45,7 +52,7 @@ export class GameState {
     return [
       `${this.mainLightOn ? '✓' : '✗'} Keep main beam running`,
       `${this.generatorFuel > 20 ? '✓' : '…'} Maintain generator fuel`,
-      `${this.generatorCharge > 30 ? '✓' : '…'} Charge generator coils`,
+      `${this.generatorCharge > 30 ? '✓' : '…'} Charge generator coils (keep above 30%)`,
       `${!this.breakdown ? '✓' : '✗'} Repair generator when it breaks`,
       `${this.radioCount > 0 ? '✓' : '…'} Check radio`
     ];

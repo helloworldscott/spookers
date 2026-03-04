@@ -21,6 +21,7 @@ export class UIManager {
     this.status.innerHTML = [
       `Generator Fuel: ${state.generatorFuel.toFixed(0)}%`,
       `Generator Charge: ${state.generatorCharge.toFixed(0)}%`,
+      `Beam Cause: ${state.getBeamCause()}`,
       `Main Light: ${state.mainLightOn ? 'ON' : 'OFF'}`,
       `Flashlight: ${player.flashlightBattery.toFixed(0)}%`,
       `Stamina: ${player.stamina.toFixed(0)}%`
