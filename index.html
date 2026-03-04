@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Lighthouse Keeper</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div class="panel left">
+      <div id="timeLabel">12:00 AM</div>
+      <div id="objectives"></div>
+    </div>
+    <div class="panel right">
+      <div id="status"></div>
+    </div>
+    <div id="prompt"></div>
+  </div>
+
+  <div id="startOverlay" class="overlay visible">
+    <h1>The Lighthouse Keeper</h1>
+    <p>Keep the beam alive until dawn.</p>
+    <ul>
+      <li>WASD move, Mouse look</li>
+      <li>E interact / hold to repair</li>
+      <li>Shift sprint</li>
+      <li>F flashlight</li>
+      <li>Esc pause</li>
+    </ul>
+    <button id="startBtn">Start Night</button>
+  </div>
+
+  <div id="pauseOverlay" class="overlay">
+    <h2>Paused</h2>
+    <label>Sensitivity <input id="sensInput" type="range" min="0.0008" max="0.004" step="0.0001" /></label>
+    <label>Master Volume <input id="volInput" type="range" min="0" max="1" step="0.01" /></label>
+    <div class="row">
+      <button id="resumeBtn">Resume</button>
+      <button id="restartBtnPause">Restart</button>
+    </div>
+  </div>
+
+  <div id="panelOverlay" class="overlay small">
+    <h3>Generator Panel</h3>
+    <p id="panelText"></p>
+    <div class="row">
+      <button id="refuelBtn">Refuel</button>
+      <button id="closePanelBtn">Close</button>
+    </div>
+  </div>
+
+  <div id="endOverlay" class="overlay">
+    <h2 id="endTitle">Game Over</h2>
+    <p id="endText"></p>
+    <button id="restartBtnEnd">Restart</button>
+    <button id="newNightBtn">New Night +</button>
+  </div>
+
+  <div id="vhs"></div>
+  <div id="jumpscare">GRABBED</div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
