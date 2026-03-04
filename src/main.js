@@ -30,6 +30,8 @@ const horror = new HorrorDirector(scene, state, audio);
 let paused = true;
 let inPanel = false;
 let currentTarget = null;
+let warnedChargeDepleted = false;
+let warnedFuelEmpty = false;
 const radioMessages = [
   '01:04 — "Keeper, keep the lamp alive. Don\'t let it go dark."',
   '02:17 — [static] "It waits where light does not turn."',
@@ -40,6 +42,24 @@ const radioMessages = [
 const raycaster = new THREE.Raycaster();
 const clock = new THREE.Clock();
 const keyState = { e: false };
+
+function getGeneratorPromptText() {
+  if (state.breakdown) return 'Generator broken: hold E to repair';
+  if (state.generatorFuel <= 0) return 'Out of fuel: refill from can';
+  if (state.generatorCharge <= 4) return 'Generator depleted: hold E to charge';
+  return 'E: Open Generator Panel / Hold E: Charge';
+}
+
+function getGeneratorPanelText() {
+  return [
+    `Fuel: ${state.generatorFuel.toFixed(0)}%`,
+    `Charge: ${state.generatorCharge.toFixed(0)}%`,
+    `Breakdown: ${state.breakdown ? 'BROKEN' : 'OK'}`,
+    state.canFilled
+      ? 'Fuel can is ready. Hold E outside panel to charge coils.'
+      : 'Generator running low. Fill can, then refuel. Hold E to charge coils.'
+  ].join('\n');
+}
 
 function setPaused(v) {
   paused = v;
@@ -91,9 +111,7 @@ function tryInteract(held = false, dt = 0) {
       inPanel = true;
       setPaused(true);
       ui.showPanel(true);
-      document.getElementById('panelText').textContent = state.canFilled
-        ? 'Fuel can is ready. Hold E outside panel to charge coils.'
-        : 'Generator running low. Fill can, then refuel. Hold E to charge coils.';
+      document.getElementById('panelText').textContent = getGeneratorPanelText();
     }
   }
 
@@ -130,7 +148,7 @@ function updateInteraction(dt) {
 
   const type = getInteractType(currentTarget.object);
   const labels = {
-    generator: state.breakdown ? 'Hold E: Repair Generator' : 'E: Open Generator Panel / Hold E: Charge',
+    generator: getGeneratorPromptText(),
     barrel: 'E: Fill Fuel Can',
     fuelcan: state.hasFuelCan ? 'Fuel Can already carried' : 'E: Pick up Fuel Can',
     radio: 'E: Check Radio'
@@ -162,7 +180,7 @@ window.addEventListener('keyup', (e) => {
 function maybeBreakdown() {
   if (!state.breakdown && Math.random() < 0.002) {
     state.breakdown = true;
-    ui.flashMessage('Generator failure! Hold E at generator to repair.');
+    ui.flashMessage('Generator broken: hold E to repair');
     audio.knock();
   }
 }
@@ -205,6 +223,16 @@ function animate() {
     player.update(dt);
     resolvePlayerCollision(prevPos);
     state.update(dt);
+    if (!warnedChargeDepleted && state.generatorCharge <= 4 && !state.breakdown) {
+      ui.flashMessage('Generator depleted: hold E to charge');
+      warnedChargeDepleted = true;
+    }
+    if (!warnedFuelEmpty && state.generatorFuel <= 0) {
+      ui.flashMessage('Out of fuel: refill from can');
+      warnedFuelEmpty = true;
+    }
+    if (state.generatorCharge > 4) warnedChargeDepleted = false;
+    if (state.generatorFuel > 0) warnedFuelEmpty = false;
     maybeBreakdown();
     updateInteraction(dt);
     horror.update(dt, camera, world, ui);
@@ -219,6 +247,10 @@ function animate() {
       ui.showEnd(state.win);
       document.exitPointerLock();
     }
+  }
+
+  if (inPanel) {
+    document.getElementById('panelText').textContent = getGeneratorPanelText();
   }
 
   ui.update(state, player, dt);
