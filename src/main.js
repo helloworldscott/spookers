@@ -48,7 +48,7 @@ function setPaused(v) {
 
 function tryInteract(held = false, dt = 0) {
   if (!currentTarget) return;
-  const t = currentTarget.object.userData.interact;
+  const t = getInteractType(currentTarget.object);
 
   if (t === 'fuelcan' && !state.hasFuelCan) {
     state.hasFuelCan = true;
@@ -94,9 +94,19 @@ function tryInteract(held = false, dt = 0) {
   }
 }
 
+
+function getInteractType(hitObject) {
+  let cur = hitObject;
+  while (cur) {
+    if (cur.userData && cur.userData.interact) return cur.userData.interact;
+    cur = cur.parent;
+  }
+  return null;
+}
+
 function updateInteraction(dt) {
   raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-  const hits = raycaster.intersectObjects(world.interactables, false);
+  const hits = raycaster.intersectObjects(world.interactables, true);
   currentTarget = hits[0] && hits[0].distance < 2.3 ? hits[0] : null;
 
   if (!currentTarget) {
@@ -105,7 +115,7 @@ function updateInteraction(dt) {
     return;
   }
 
-  const type = currentTarget.object.userData.interact;
+  const type = getInteractType(currentTarget.object);
   const labels = {
     generator: state.breakdown ? 'Hold E: Repair Generator' : 'E: Open Generator Panel',
     barrel: 'E: Fill Fuel Can',
@@ -143,12 +153,41 @@ function maybeBreakdown() {
   }
 }
 
+function collidesWithEnemy(pos) {
+  if (!horror.entity.visible) return false;
+  return pos.distanceTo(horror.entity.position) < 1.15;
+}
+
+function resolvePlayerCollision(prevPos) {
+  const p = camera.position;
+  const r = 0.35;
+
+  // World blockers
+  if (world.collidesCircleAt(p.x, p.z, r) || collidesWithEnemy(p)) {
+    const testX = { x: p.x, z: prevPos.z };
+    const hitX = world.collidesCircleAt(testX.x, testX.z, r) || collidesWithEnemy(new THREE.Vector3(testX.x, p.y, testX.z));
+    const testZ = { x: prevPos.x, z: p.z };
+    const hitZ = world.collidesCircleAt(testZ.x, testZ.z, r) || collidesWithEnemy(new THREE.Vector3(testZ.x, p.y, testZ.z));
+
+    if (hitX && hitZ) {
+      p.x = prevPos.x;
+      p.z = prevPos.z;
+    } else if (hitX) {
+      p.x = prevPos.x;
+    } else if (hitZ) {
+      p.z = prevPos.z;
+    }
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, clock.getDelta());
 
   if (!paused) {
+    const prevPos = camera.position.clone();
     player.update(dt);
+    resolvePlayerCollision(prevPos);
     state.update(dt);
     maybeBreakdown();
     updateInteraction(dt);

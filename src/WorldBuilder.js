@@ -5,6 +5,7 @@ export class WorldBuilder {
     this.scene = scene;
     this.interactables = [];
     this.tempEffects = [];
+    this.colliders = [];
     this.blackoutTimer = 0;
     this.lightIntensityScale = 1;
 
@@ -15,6 +16,21 @@ export class WorldBuilder {
       metal: new THREE.MeshStandardMaterial({ color: 0x6d7885, flatShading: true }),
       dark: new THREE.MeshStandardMaterial({ color: 0x101215, flatShading: true })
     };
+  }
+
+  addBoxCollider(cx, cz, sx, sz) {
+    this.colliders.push({ cx, cz, hx: sx * 0.5, hz: sz * 0.5 });
+  }
+
+  collidesCircleAt(x, z, r = 0.35) {
+    for (const c of this.colliders) {
+      const nx = Math.max(c.cx - c.hx, Math.min(x, c.cx + c.hx));
+      const nz = Math.max(c.cz - c.hz, Math.min(z, c.cz + c.hz));
+      const dx = x - nx;
+      const dz = z - nz;
+      if (dx * dx + dz * dz < r * r) return true;
+    }
+    return false;
   }
 
   build() {
@@ -43,6 +59,7 @@ export class WorldBuilder {
     const tower = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.5, 11, 8), this.materials.wood);
     tower.position.set(0, 4.5, 0);
     this.scene.add(tower);
+    this.addBoxCollider(0, 0, 6.2, 6.2);
 
     const top = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 2.1, 8), this.materials.metal);
     top.position.set(0, 10.8, 0);
@@ -73,6 +90,7 @@ export class WorldBuilder {
       const r = 10 + Math.random() * 8;
       rock.position.set(Math.cos(a) * r, -0.5, Math.sin(a) * r);
       this.scene.add(rock);
+      this.addBoxCollider(rock.position.x, rock.position.z, 0.9, 0.9);
     }
     const dock = new THREE.Mesh(new THREE.BoxGeometry(6, 0.4, 2), this.materials.wood);
     dock.position.set(0, -0.5, -15.5);
@@ -83,8 +101,9 @@ export class WorldBuilder {
     const shed = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3, 4), this.materials.wood);
     shed.position.set(9, 0.5, 6);
     this.scene.add(shed);
+    this.addBoxCollider(9, 6, 5.5, 4);
 
-    // More visible generator body + exhaust stack + starter wheel.
+    // Highly visible generator cluster.
     this.generator = new THREE.Group();
     const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.1, 1.5), this.materials.metal);
     const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.9, 8), this.materials.dark);
@@ -94,17 +113,32 @@ export class WorldBuilder {
     wheel.position.set(1.28, 0.2, 0);
     const panel = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.08), this.materials.dark);
     panel.position.set(0.7, 0.15, 0.8);
-    this.generator.add(base, exhaust, wheel, panel);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.3, 1.7), new THREE.MeshStandardMaterial({ color: 0x8d6117, flatShading: true }));
+    frame.position.y = -0.02;
+    this.generator.add(frame, base, exhaust, wheel, panel);
     this.generator.position.set(8.1, -0.05, 6);
     this.generator.userData.interact = 'generator';
     this.scene.add(this.generator);
     this.interactables.push(this.generator);
+    this.addBoxCollider(8.1, 6, 2.8, 1.8);
+
+    this.generatorBeacon = new THREE.PointLight(0xff4d2d, 0.7, 4);
+    this.generatorBeacon.position.set(8.9, 1.1, 6.7);
+    this.scene.add(this.generatorBeacon);
+
+    const genSign = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 0.25, 0.1),
+      new THREE.MeshStandardMaterial({ color: 0xb62727, flatShading: true })
+    );
+    genSign.position.set(8.9, 1.7, 7.9);
+    this.scene.add(genSign);
 
     this.barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.1, 8), this.materials.dark);
     this.barrel.position.set(10, -0.45, 5.1);
     this.barrel.userData.interact = 'barrel';
     this.scene.add(this.barrel);
     this.interactables.push(this.barrel);
+    this.addBoxCollider(10, 5.1, 1, 1);
 
     this.fuelCan = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.45, 0.25), new THREE.MeshStandardMaterial({ color: 0xa3362b, flatShading: true }));
     this.fuelCan.position.set(9.3, -0.2, 4.9);
@@ -117,6 +151,7 @@ export class WorldBuilder {
     const room = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 5), this.materials.wood);
     room.position.set(-7, 0.5, 6);
     this.scene.add(room);
+    this.addBoxCollider(-7, 6, 6, 5);
 
     this.radio = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.4), this.materials.metal);
     this.radio.position.set(-6.4, 0.45, 6.8);
@@ -127,6 +162,7 @@ export class WorldBuilder {
     const bed = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.35, 1), this.materials.dark);
     bed.position.set(-8.4, -0.3, 5.8);
     this.scene.add(bed);
+    this.addBoxCollider(-8.4, 5.8, 2.1, 1);
   }
 
   update(dt, state) {
@@ -137,6 +173,8 @@ export class WorldBuilder {
     const intensity = off ? 0 : 2.2 * flicker * this.lightIntensityScale;
     this.mainSpot.intensity = intensity;
     this.beamCone.visible = intensity > 0.1;
+
+    this.generatorBeacon.intensity = state.breakdown ? 1.6 : 0.7 + Math.sin(state.elapsed * 7) * 0.2;
 
     this.blackoutTimer = Math.max(0, this.blackoutTimer - dt);
     this.lightIntensityScale += (1 - this.lightIntensityScale) * dt * 2;
