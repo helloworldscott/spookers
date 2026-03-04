@@ -19,12 +19,7 @@ export class GameState {
     this.elapsed += dt;
     this.generatorFuel -= dt * 1.3;
 
-    if (this.breakdown) {
-      this.mainLightOn = false;
-    } else {
-      this.mainLightOn = this.generatorFuel > 0;
-    }
-
+    this.mainLightOn = !this.breakdown && this.generatorFuel > 0;
     if (!this.mainLightOn) this.mainLightOffAccum += dt;
     this.generatorFuel = Math.max(0, this.generatorFuel);
 
@@ -34,7 +29,7 @@ export class GameState {
   getTimeLabel() {
     const progress = Math.min(1, this.elapsed / this.nightDurationSec);
     const totalMin = 360 * progress;
-    const hour24 = 0 + Math.floor(totalMin / 60);
+    const hour24 = Math.floor(totalMin / 60);
     const min = Math.floor(totalMin % 60);
     const hour12 = ((hour24 + 11) % 12) + 1;
     return `${hour12}:${String(min).padStart(2, '0')} AM`;
@@ -44,7 +39,7 @@ export class GameState {
     return [
       `${this.mainLightOn ? '✓' : '✗'} Keep main beam running`,
       `${this.generatorFuel > 20 ? '✓' : '…'} Maintain generator fuel`,
-      `${!this.breakdown ? '✓' : '✗'} Repair breaker when broken`,
+      `${!this.breakdown ? '✓' : '✗'} Repair generator when it breaks`,
       `${this.radioCount > 0 ? '✓' : '…'} Check radio`
     ];
   }

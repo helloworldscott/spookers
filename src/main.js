@@ -30,7 +30,7 @@ const horror = new HorrorDirector(scene, state, audio);
 let paused = true;
 let inPanel = false;
 let currentTarget = null;
-let radioMessages = [
+const radioMessages = [
   '01:04 — "Keeper, keep the lamp alive. Don\'t let it go dark."',
   '02:17 — [static] "It waits where light does not turn."',
   '03:40 — "If you hear steps, stay calm and keep working."',
@@ -39,6 +39,7 @@ let radioMessages = [
 
 const raycaster = new THREE.Raycaster();
 const clock = new THREE.Clock();
+const keyState = { e: false };
 
 function setPaused(v) {
   paused = v;
@@ -55,30 +56,35 @@ function tryInteract(held = false, dt = 0) {
     currentTarget.object.visible = false;
     ui.flashMessage('Picked up empty fuel can.');
   }
+
   if (t === 'barrel' && state.hasFuelCan) {
     state.canFilled = true;
     ui.flashMessage('Fuel can filled.');
   }
+
   if (t === 'generator') {
-    inPanel = true;
-    setPaused(true);
-    ui.showPanel(true);
-    document.getElementById('panelText').textContent = state.canFilled
-      ? 'Fuel can is ready.'
-      : 'Generator running low. You need filled can.';
-  }
-  if (t === 'breaker') {
-    if (!state.breakdown) return;
-    if (held) {
+    if (state.breakdown && held) {
       state.repairProgress += dt;
       ui.setPrompt(`Holding E... Repair ${(state.repairProgress / 3 * 100).toFixed(0)}%`);
       if (state.repairProgress >= 3) {
         state.breakdown = false;
         state.repairProgress = 0;
-        ui.flashMessage('Breaker repaired.');
+        ui.flashMessage('Generator repaired. Main beam restored.');
+        audio.beep(420, 0.12, 'sawtooth', 0.12);
       }
+      return;
+    }
+
+    if (!state.breakdown) {
+      inPanel = true;
+      setPaused(true);
+      ui.showPanel(true);
+      document.getElementById('panelText').textContent = state.canFilled
+        ? 'Fuel can is ready.'
+        : 'Generator running low. You need filled can.';
     }
   }
+
   if (t === 'radio') {
     const msg = radioMessages[state.radioCount % radioMessages.length];
     state.radioCount++;
@@ -95,39 +101,44 @@ function updateInteraction(dt) {
 
   if (!currentTarget) {
     if (!ui.messageTimer) ui.setPrompt('');
+    state.repairProgress = 0;
     return;
   }
 
   const type = currentTarget.object.userData.interact;
   const labels = {
-    generator: 'E: Open Generator Panel',
-    breaker: state.breakdown ? 'Hold E: Repair Breaker' : 'Breaker stable',
+    generator: state.breakdown ? 'Hold E: Repair Generator' : 'E: Open Generator Panel',
     barrel: 'E: Fill Fuel Can',
     fuelcan: state.hasFuelCan ? 'Fuel Can already carried' : 'E: Pick up Fuel Can',
     radio: 'E: Check Radio'
   };
   if (!ui.messageTimer) ui.setPrompt(labels[type]);
 
-  if (keyState.e && type === 'breaker') tryInteract(true, dt);
+  if (keyState.e && type === 'generator' && state.breakdown) tryInteract(true, dt);
 }
 
-const keyState = { e: false };
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
     document.exitPointerLock();
     if (!inPanel && !state.gameOver && !state.win && !ui.startOverlay.classList.contains('visible')) setPaused(true);
   }
+
   if (e.code === 'KeyE') {
     keyState.e = true;
     if (!paused) tryInteract(false, 0);
   }
 });
-window.addEventListener('keyup', (e) => { if (e.code === 'KeyE') keyState.e = false; });
+window.addEventListener('keyup', (e) => {
+  if (e.code === 'KeyE') {
+    keyState.e = false;
+    state.repairProgress = 0;
+  }
+});
 
 function maybeBreakdown() {
   if (!state.breakdown && Math.random() < 0.002) {
     state.breakdown = true;
-    ui.flashMessage('Breaker tripped! Repair at panel.');
+    ui.flashMessage('Generator failure! Hold E at generator to repair.');
     audio.knock();
   }
 }
@@ -143,8 +154,10 @@ function animate() {
     updateInteraction(dt);
     horror.update(dt, camera, world, ui);
     world.update(dt, state);
-    if (camera.position.y < 1.7) camera.position.y = 1.7;
-    if (Math.floor(state.elapsed) % 2 === 0 && (keyState.e || player.move.f || player.move.b || player.move.l || player.move.r)) audio.footstep();
+
+    if (Math.floor(state.elapsed) % 2 === 0 && (player.move.f || player.move.b || player.move.l || player.move.r)) {
+      audio.footstep();
+    }
 
     if (state.gameOver || state.win) {
       setPaused(true);
@@ -170,7 +183,6 @@ const restartBtns = [document.getElementById('restartBtnPause'), document.getEle
 const newNightBtn = document.getElementById('newNightBtn');
 const sensInput = document.getElementById('sensInput');
 const volInput = document.getElementById('volInput');
-const panel = document.getElementById('panelOverlay');
 
 document.getElementById('refuelBtn').onclick = () => {
   if (state.canFilled) {
@@ -182,6 +194,7 @@ document.getElementById('refuelBtn').onclick = () => {
     ui.flashMessage('No fuel in can.');
   }
 };
+
 document.getElementById('closePanelBtn').onclick = () => {
   inPanel = false;
   ui.showPanel(false);
@@ -199,10 +212,11 @@ startBtn.onclick = () => {
   volInput.value = audio.masterVolume;
   player.lock();
 };
+
 resumeBtn.onclick = () => { setPaused(false); player.lock(); };
 sensInput.oninput = (e) => player.setSensitivity(parseFloat(e.target.value));
 volInput.oninput = (e) => audio.setVolume(parseFloat(e.target.value));
-restartBtns.forEach((b) => b.onclick = () => location.reload());
+restartBtns.forEach((b) => { b.onclick = () => location.reload(); });
 newNightBtn.onclick = () => { localStorage.setItem('nightBoost', '1'); location.reload(); };
 
 if (localStorage.getItem('nightBoost')) {

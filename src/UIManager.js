@@ -11,6 +11,7 @@ export class UIManager {
     this.endOverlay = document.getElementById('endOverlay');
     this.endTitle = document.getElementById('endTitle');
     this.endText = document.getElementById('endText');
+    this.jumpscare = document.getElementById('jumpscare');
     this.messageTimer = 0;
   }
 
@@ -40,6 +41,11 @@ export class UIManager {
     this.messageTimer = 2;
   }
 
+  triggerJumpscare() {
+    this.jumpscare.classList.add('active');
+    setTimeout(() => this.jumpscare.classList.remove('active'), 350);
+  }
+
   shake(amount = 0.1) {
     document.body.style.transform = `translate(${(Math.random() - 0.5) * amount * 8}px, ${(Math.random() - 0.5) * amount * 8}px)`;
     setTimeout(() => { document.body.style.transform = ''; }, 80);
@@ -47,7 +53,7 @@ export class UIManager {
 
   showEnd(win) {
     this.endTitle.textContent = win ? 'You Survived' : 'Game Over';
-    this.endText.textContent = win ? 'Dawn breaks over the island.' : 'The fog claimed the keeper.';
+    this.endText.textContent = win ? 'Dawn breaks over the island.' : 'The creature grabbed you in the fog.';
     this.endOverlay.classList.add('visible');
   }
 }

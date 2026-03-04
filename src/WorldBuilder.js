@@ -1,5 +1,4 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
-import { registerCollidable, unregisterCollidable, updateColliders } from './CollisionManager.js';
 
 export class WorldBuilder {
   constructor(scene) {
@@ -38,19 +37,16 @@ export class WorldBuilder {
     this.buildYard();
     this.buildShed();
     this.buildRoom();
-    updateColliders();
   }
 
   buildLighthouse() {
     const tower = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.5, 11, 8), this.materials.wood);
     tower.position.set(0, 4.5, 0);
     this.scene.add(tower);
-    registerCollidable(tower);
 
     const top = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 2.1, 8), this.materials.metal);
     top.position.set(0, 10.8, 0);
     this.scene.add(top);
-    registerCollidable(top);
 
     this.beamRoot = new THREE.Group();
     this.beamRoot.position.set(0, 11, 0);
@@ -77,39 +73,37 @@ export class WorldBuilder {
       const r = 10 + Math.random() * 8;
       rock.position.set(Math.cos(a) * r, -0.5, Math.sin(a) * r);
       this.scene.add(rock);
-      registerCollidable(rock);
     }
     const dock = new THREE.Mesh(new THREE.BoxGeometry(6, 0.4, 2), this.materials.wood);
     dock.position.set(0, -0.5, -15.5);
     this.scene.add(dock);
-    registerCollidable(dock);
   }
 
   buildShed() {
     const shed = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3, 4), this.materials.wood);
     shed.position.set(9, 0.5, 6);
     this.scene.add(shed);
-    registerCollidable(shed);
 
-    this.generator = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 1), this.materials.metal);
-    this.generator.position.set(8.3, -0.1, 6);
+    // More visible generator body + exhaust stack + starter wheel.
+    this.generator = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.1, 1.5), this.materials.metal);
+    const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.9, 8), this.materials.dark);
+    exhaust.position.set(-0.8, 0.95, -0.45);
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.06, 8, 14), this.materials.dark);
+    wheel.rotation.y = Math.PI / 2;
+    wheel.position.set(1.28, 0.2, 0);
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.08), this.materials.dark);
+    panel.position.set(0.7, 0.15, 0.8);
+    this.generator.add(base, exhaust, wheel, panel);
+    this.generator.position.set(8.1, -0.05, 6);
     this.generator.userData.interact = 'generator';
     this.scene.add(this.generator);
-    registerCollidable(this.generator);
     this.interactables.push(this.generator);
-
-    this.breaker = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.25), this.materials.metal);
-    this.breaker.position.set(10.4, 0.3, 7.5);
-    this.breaker.userData.interact = 'breaker';
-    this.scene.add(this.breaker);
-    registerCollidable(this.breaker);
-    this.interactables.push(this.breaker);
 
     this.barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.1, 8), this.materials.dark);
     this.barrel.position.set(10, -0.45, 5.1);
     this.barrel.userData.interact = 'barrel';
     this.scene.add(this.barrel);
-    registerCollidable(this.barrel);
     this.interactables.push(this.barrel);
 
     this.fuelCan = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.45, 0.25), new THREE.MeshStandardMaterial({ color: 0xa3362b, flatShading: true }));
@@ -123,7 +117,6 @@ export class WorldBuilder {
     const room = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 5), this.materials.wood);
     room.position.set(-7, 0.5, 6);
     this.scene.add(room);
-    registerCollidable(room);
 
     this.radio = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.4), this.materials.metal);
     this.radio.position.set(-6.4, 0.45, 6.8);
@@ -134,11 +127,9 @@ export class WorldBuilder {
     const bed = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.35, 1), this.materials.dark);
     bed.position.set(-8.4, -0.3, 5.8);
     this.scene.add(bed);
-    registerCollidable(bed);
   }
 
   update(dt, state) {
-    updateColliders();
     this.beamRoot.rotation.y += dt * 0.55;
 
     const off = !state.mainLightOn || this.blackoutTimer > 0;
@@ -161,10 +152,7 @@ export class WorldBuilder {
     this.tempEffects = this.tempEffects.filter((fx) => {
       fx.life -= dt;
       fx.update?.(dt);
-      if (fx.life <= 0) {
-        this.scene.remove(fx.mesh);
-        unregisterCollidable(fx.mesh);
-      }
+      if (fx.life <= 0) this.scene.remove(fx.mesh);
       return fx.life > 0;
     });
   }
@@ -193,7 +181,6 @@ export class WorldBuilder {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.8, 0.4), this.materials.dark);
     mesh.position.set(-14, 0, -8);
     this.scene.add(mesh);
-    registerCollidable(mesh);
     this.tempEffects.push({ mesh, life: 4, update: (dt) => (mesh.position.x += dt * 7) });
   }
 }

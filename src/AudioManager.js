@@ -81,4 +81,29 @@ export class AudioManager {
     if (!this.ctx || !this.wind) return;
     this.wind.gain.value = 0.18 + Math.min(0.2, level * 0.2);
   }
+
+  jumpscare() {
+    const now = this.ctx.currentTime;
+    const bass = this.ctx.createOscillator();
+    bass.type = 'sawtooth';
+    bass.frequency.setValueAtTime(140, now);
+    bass.frequency.exponentialRampToValueAtTime(42, now + 0.45);
+
+    const shriek = this.ctx.createOscillator();
+    shriek.type = 'square';
+    shriek.frequency.setValueAtTime(980, now);
+    shriek.frequency.exponentialRampToValueAtTime(230, now + 0.25);
+
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.001, now);
+    g.gain.exponentialRampToValueAtTime(0.65, now + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+    bass.connect(g);
+    shriek.connect(g);
+    g.connect(this.master);
+    bass.start(); shriek.start();
+    bass.stop(now + 0.7); shriek.stop(now + 0.7);
+  }
 }
+

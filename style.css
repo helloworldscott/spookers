@@ -76,6 +76,22 @@ button:hover { background: #27425e; }
   animation: grain .2s steps(2) infinite;
   opacity: .25;
 }
+#jumpscare {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(30px, 10vw, 130px);
+  letter-spacing: 0.3em;
+  color: #ff3939;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 0 24px #ff0000;
+  background: radial-gradient(circle, rgba(120,0,0,.2), rgba(0,0,0,.92));
+  transition: opacity .08s;
+  z-index: 20;
+}
+#jumpscare.active { opacity: 1; }
 @keyframes grain {
   0% { transform: translate(0,0); }
   100% { transform: translate(0,2px); }
