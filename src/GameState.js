@@ -3,6 +3,7 @@ export class GameState {
     this.nightDurationSec = 360;
     this.elapsed = 0;
     this.generatorFuel = 100;
+    this.generatorCharge = 75;
     this.breakdown = false;
     this.mainLightOn = true;
     this.mainLightOffAccum = 0;
@@ -10,6 +11,7 @@ export class GameState {
     this.canFilled = false;
     this.radioCount = 0;
     this.repairProgress = 0;
+    this.chargeProgress = 0;
     this.gameOver = false;
     this.win = false;
   }
@@ -17,11 +19,15 @@ export class GameState {
   update(dt) {
     if (this.gameOver || this.win) return;
     this.elapsed += dt;
-    this.generatorFuel -= dt * 1.3;
 
-    this.mainLightOn = !this.breakdown && this.generatorFuel > 0;
-    if (!this.mainLightOn) this.mainLightOffAccum += dt;
+    this.generatorFuel -= dt * 1.3;
+    this.generatorCharge -= dt * 2.1;
+
     this.generatorFuel = Math.max(0, this.generatorFuel);
+    this.generatorCharge = Math.max(0, this.generatorCharge);
+
+    this.mainLightOn = !this.breakdown && this.generatorFuel > 0 && this.generatorCharge > 4;
+    if (!this.mainLightOn) this.mainLightOffAccum += dt;
 
     if (this.elapsed >= this.nightDurationSec) this.win = true;
   }
@@ -39,6 +45,7 @@ export class GameState {
     return [
       `${this.mainLightOn ? '✓' : '✗'} Keep main beam running`,
       `${this.generatorFuel > 20 ? '✓' : '…'} Maintain generator fuel`,
+      `${this.generatorCharge > 30 ? '✓' : '…'} Charge generator coils`,
       `${!this.breakdown ? '✓' : '✗'} Repair generator when it breaks`,
       `${this.radioCount > 0 ? '✓' : '…'} Check radio`
     ];

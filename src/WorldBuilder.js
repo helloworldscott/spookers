@@ -115,7 +115,16 @@ export class WorldBuilder {
     panel.position.set(0.7, 0.15, 0.8);
     const frame = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.3, 1.7), new THREE.MeshStandardMaterial({ color: 0x8d6117, flatShading: true }));
     frame.position.y = -0.02;
-    this.generator.add(frame, base, exhaust, wheel, panel);
+
+    // Spinning cogs to telegraph generator activity.
+    this.generatorCogA = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.07, 8, 12), this.materials.dark);
+    this.generatorCogB = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.05, 8, 10), this.materials.dark);
+    this.generatorCogA.rotation.y = Math.PI / 2;
+    this.generatorCogB.rotation.y = Math.PI / 2;
+    this.generatorCogA.position.set(-0.1, 0.25, 0.82);
+    this.generatorCogB.position.set(-0.38, 0.2, 0.82);
+
+    this.generator.add(frame, base, exhaust, wheel, panel, this.generatorCogA, this.generatorCogB);
     this.generator.position.set(8.1, -0.05, 6);
     this.generator.userData.interact = 'generator';
     this.scene.add(this.generator);
@@ -169,12 +178,17 @@ export class WorldBuilder {
     this.beamRoot.rotation.y += dt * 0.55;
 
     const off = !state.mainLightOn || this.blackoutTimer > 0;
-    const flicker = state.generatorFuel < 15 ? (Math.sin(state.elapsed * 22) * 0.4 + 0.6) : 1;
+    const weakPower = state.generatorFuel < 15 || state.generatorCharge < 20;
+    const flicker = weakPower ? (Math.sin(state.elapsed * 22) * 0.4 + 0.6) : 1;
     const intensity = off ? 0 : 2.2 * flicker * this.lightIntensityScale;
     this.mainSpot.intensity = intensity;
     this.beamCone.visible = intensity > 0.1;
 
-    this.generatorBeacon.intensity = state.breakdown ? 1.6 : 0.7 + Math.sin(state.elapsed * 7) * 0.2;
+    this.generatorBeacon.intensity = state.breakdown ? 1.8 : 0.6 + (state.generatorCharge / 100) * 0.9;
+
+    const cogSpeed = state.breakdown ? 0 : 1.5 + (state.generatorCharge / 100) * 5;
+    this.generatorCogA.rotation.z += dt * cogSpeed;
+    this.generatorCogB.rotation.z -= dt * cogSpeed * 1.35;
 
     this.blackoutTimer = Math.max(0, this.blackoutTimer - dt);
     this.lightIntensityScale += (1 - this.lightIntensityScale) * dt * 2;

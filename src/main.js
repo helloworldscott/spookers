@@ -69,8 +69,20 @@ function tryInteract(held = false, dt = 0) {
       if (state.repairProgress >= 3) {
         state.breakdown = false;
         state.repairProgress = 0;
+        state.chargeProgress = 0;
         ui.flashMessage('Generator repaired. Main beam restored.');
         audio.beep(420, 0.12, 'sawtooth', 0.12);
+      }
+      return;
+    }
+
+    if (!state.breakdown && held) {
+      state.chargeProgress += dt;
+      state.generatorCharge = Math.min(100, state.generatorCharge + dt * 24);
+      ui.setPrompt(`Charging coils... ${state.generatorCharge.toFixed(0)}%`);
+      if (state.chargeProgress >= 1.5) {
+        state.chargeProgress = 0;
+        audio.beep(640, 0.08, 'square', 0.09);
       }
       return;
     }
@@ -80,8 +92,8 @@ function tryInteract(held = false, dt = 0) {
       setPaused(true);
       ui.showPanel(true);
       document.getElementById('panelText').textContent = state.canFilled
-        ? 'Fuel can is ready.'
-        : 'Generator running low. You need filled can.';
+        ? 'Fuel can is ready. Hold E outside panel to charge coils.'
+        : 'Generator running low. Fill can, then refuel. Hold E to charge coils.';
     }
   }
 
@@ -112,19 +124,20 @@ function updateInteraction(dt) {
   if (!currentTarget) {
     if (!ui.messageTimer) ui.setPrompt('');
     state.repairProgress = 0;
+    state.chargeProgress = 0;
     return;
   }
 
   const type = getInteractType(currentTarget.object);
   const labels = {
-    generator: state.breakdown ? 'Hold E: Repair Generator' : 'E: Open Generator Panel',
+    generator: state.breakdown ? 'Hold E: Repair Generator' : 'E: Open Generator Panel / Hold E: Charge',
     barrel: 'E: Fill Fuel Can',
     fuelcan: state.hasFuelCan ? 'Fuel Can already carried' : 'E: Pick up Fuel Can',
     radio: 'E: Check Radio'
   };
   if (!ui.messageTimer) ui.setPrompt(labels[type]);
 
-  if (keyState.e && type === 'generator' && state.breakdown) tryInteract(true, dt);
+  if (keyState.e && type === 'generator') tryInteract(true, dt);
 }
 
 window.addEventListener('keydown', (e) => {
@@ -142,6 +155,7 @@ window.addEventListener('keyup', (e) => {
   if (e.code === 'KeyE') {
     keyState.e = false;
     state.repairProgress = 0;
+    state.chargeProgress = 0;
   }
 });
 
@@ -155,7 +169,9 @@ function maybeBreakdown() {
 
 function collidesWithEnemy(pos) {
   if (!horror.entity.visible) return false;
-  return pos.distanceTo(horror.entity.position) < 1.15;
+  const d = pos.distanceTo(horror.entity.position);
+  if (d < horror.grabRange + 0.05) return false;
+  return d < 1.15;
 }
 
 function resolvePlayerCollision(prevPos) {
@@ -226,6 +242,7 @@ const volInput = document.getElementById('volInput');
 document.getElementById('refuelBtn').onclick = () => {
   if (state.canFilled) {
     state.generatorFuel = Math.min(100, state.generatorFuel + 45);
+    state.generatorCharge = Math.min(100, state.generatorCharge + 12);
     state.canFilled = false;
     ui.flashMessage('Generator refueled.');
     audio.beep(500, 0.1, 'square', 0.08);

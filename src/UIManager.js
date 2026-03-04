@@ -19,7 +19,8 @@ export class UIManager {
     this.timeLabel.textContent = state.getTimeLabel();
     this.objectives.innerHTML = state.getObjectives().map((o) => `<div>${o}</div>`).join('');
     this.status.innerHTML = [
-      `Generator: ${state.generatorFuel.toFixed(0)}%`,
+      `Generator Fuel: ${state.generatorFuel.toFixed(0)}%`,
+      `Generator Charge: ${state.generatorCharge.toFixed(0)}%`,
       `Main Light: ${state.mainLightOn ? 'ON' : 'OFF'}`,
       `Flashlight: ${player.flashlightBattery.toFixed(0)}%`,
       `Stamina: ${player.stamina.toFixed(0)}%`
