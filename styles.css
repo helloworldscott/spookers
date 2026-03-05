@@ -1,0 +1,50 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; overflow: hidden; background: #070b12; }
+#game { width: 100vw; height: 100vh; display: block; }
+
+#hud {
+  position: fixed; inset: 0; pointer-events: none;
+}
+.panel {
+  position: absolute; top: 14px; left: 14px;
+  padding: 10px 12px; background: rgba(6, 10, 16, 0.72);
+  border: 1px solid rgba(147, 173, 206, 0.25);
+  border-radius: 8px; min-width: 300px; line-height: 1.45;
+}
+#objectiveLabel { margin-top: 6px; color: #d8e9ff; }
+#prompt {
+  position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%);
+  padding: 7px 12px; border-radius: 7px;
+  background: rgba(6, 10, 16, 0.82); border: 1px solid rgba(147, 173, 206, 0.3);
+  opacity: 0; transition: opacity 120ms; white-space: pre-line;
+}
+#prompt.visible { opacity: 1; }
+
+#crosshair {
+  pointer-events: none;
+  position: fixed; left: 50%; top: 50%; width: 10px; height: 10px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(226, 236, 255, 0.8); border-radius: 50%;
+}
+
+.overlay {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 10px; text-align: center;
+  background: rgba(5, 8, 12, 0.9); z-index: 20; padding: 24px;
+}
+.overlay.visible { display: flex; }
+.overlay.small { inset: auto 50% 18px auto; transform: translateX(50%); width: min(92vw, 720px); border-radius: 12px; border: 1px solid rgba(147, 173, 206, 0.3); }
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+button {
+  border: 1px solid #3d5f86; background: #102236; color: #e9f2ff;
+  border-radius: 8px; padding: 8px 12px; cursor: pointer;
+}
+button:hover { background: #15304c; }
+
+#logList { max-height: 180px; overflow: auto; width: min(92vw, 520px); text-align: left; }
+.page-item { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(147, 173, 206, 0.2); }

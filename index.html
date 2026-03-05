@@ -3,65 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Lighthouse Keeper</title>
-  <link rel="stylesheet" href="./style.css" />
+  <title>Lighthouse: Nights of Fog</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <canvas id="game"></canvas>
 
   <div id="hud">
-    <div class="panel left">
-      <div id="timeLabel">12:00 AM</div>
-      <div id="objectives"></div>
-    </div>
-    <div class="panel right">
-      <div id="status"></div>
+    <div class="panel">
+      <div id="nightLabel">Night 1</div>
+      <div id="fuelLabel">Fuel: 0%</div>
+      <div id="powerLabel">Power: 0%</div>
+      <div id="objectiveLabel">Objective: ...</div>
     </div>
     <div id="prompt"></div>
   </div>
 
+  <div id="crosshair"></div>
+
   <div id="startOverlay" class="overlay visible">
-    <h1>The Lighthouse Keeper</h1>
-    <p>Keep the beam alive until dawn.</p>
-    <ul>
-      <li>WASD move, Mouse look</li>
-      <li>E interact / hold to repair</li>
-      <li>Shift sprint</li>
-      <li>F flashlight</li>
-      <li>Esc pause</li>
-    </ul>
-    <button id="startBtn">Start Night</button>
+    <h1>Lighthouse: Nights of Fog</h1>
+    <p>Creatures move in darkness. Keep the beam alive.</p>
+    <button id="startBtn">Click to Start</button>
   </div>
 
-  <div id="pauseOverlay" class="overlay">
-    <h2>Paused</h2>
-    <label>Sensitivity <input id="sensInput" type="range" min="0.0008" max="0.004" step="0.0001" /></label>
-    <label>Master Volume <input id="volInput" type="range" min="0" max="1" step="0.01" /></label>
-    <div class="row">
-      <button id="resumeBtn">Resume</button>
-      <button id="restartBtnPause">Restart</button>
-    </div>
-  </div>
-
-  <div id="panelOverlay" class="overlay small">
-    <h3>Generator Panel</h3>
-    <p id="panelText"></p>
-    <div class="row">
-      <button id="refuelBtn">Refuel</button>
-      <button id="closePanelBtn">Close</button>
-    </div>
+  <div id="dawnOverlay" class="overlay">
+    <h2 id="dawnTitle">Dawn</h2>
+    <p id="dawnText"></p>
+    <button id="nextNightBtn">Begin Next Night</button>
   </div>
 
   <div id="endOverlay" class="overlay">
-    <h2 id="endTitle">Game Over</h2>
+    <h2 id="endTitle">Ending</h2>
     <p id="endText"></p>
-    <button id="restartBtnEnd">Restart</button>
-    <button id="newNightBtn">New Night +</button>
+    <button id="restartBtn">Restart</button>
   </div>
 
-  <div id="vhs"></div>
-  <div id="jumpscare">GRABBED</div>
+  <div id="choiceOverlay" class="overlay small">
+    <h3>Final Choice</h3>
+    <p>What will you do when dawn is near?</p>
+    <div class="row">
+      <button id="choiceEscape">Call for Escape</button>
+      <button id="choiceKeeper">Remain as Keeper</button>
+      <button id="choiceDestroy">Destroy Lighthouse</button>
+    </div>
+  </div>
 
-  <script type="module" src="./src/main.js"></script>
+  <div id="lensOverlay" class="overlay small">
+    <h3>Lens Alignment</h3>
+    <p>Set all knobs to target 2.</p>
+    <p id="lensStatus"></p>
+    <div class="row">
+      <button id="lensK1">Knob A</button>
+      <button id="lensK2">Knob B</button>
+      <button id="lensK3">Knob C</button>
+      <button id="lensClose">Close</button>
+    </div>
+  </div>
+
+  <div id="logbook" class="overlay small">
+    <h3>Logbook</h3>
+    <p id="logCount">Pages: 0/5</p>
+    <div id="logList"></div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
